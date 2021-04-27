@@ -1,0 +1,10 @@
+venv/
+
+window*
+
+.idea
+
+__pycache__/
+*.pyc
+
+RecurrentBIMPoseNetDataset
