@@ -400,7 +400,10 @@ def create_posenet(weights_path=None, tune=False, stepsize=1):
 
         cls3_fc1_pose = TimeDistributed(Dense(2048, activation='relu'), name='cls3_fc1_pose')(cls3_fc1_flat)
 
-        lstm = LSTM(LSTM_size, dropout=drop1, recurrent_dropout=drop2, return_sequences=True,
+        # lstm = LSTM(LSTM_size, dropout=drop1, recurrent_dropout=drop2, return_sequences=True,
+        #             input_shape=(stepsize, 2048))(
+        #     cls3_fc1_pose)
+        lstm = LSTM(LSTM_size, dropout=drop1, recurrent_dropout=0, return_sequences=True,
                     input_shape=(stepsize, 2048))(
             cls3_fc1_pose)
 

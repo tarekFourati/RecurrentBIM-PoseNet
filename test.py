@@ -1,6 +1,8 @@
 import keras
 
-print (keras.__version__)
+from train import validation_error_x
+
+print(keras.__version__)
 
 import math
 
@@ -14,6 +16,7 @@ import posenetLSTMDropoutTest as posenet
 
 import numpy as np
 from keras.optimizers import Adam
+from generator import DataGenerator
 
 # Define window length
 window = 10
@@ -23,8 +26,8 @@ if __name__ == "__main__":
     model = posenet.create_posenet(None, True, window)
 
     # load weight file
-    weight_file = 'window10batch25LR0.001beta600LSTM256Dropout0.50.5'
-    model.load_weights(weight_file + '.h5')
+    weight_file = 'window4batch25LR0.001beta600LSTM256Dropout0.250.25_weight.h5'
+    model.load_weights(weight_file)
 
     # define the optimiser
     adam = Adam(lr=0.001, clipvalue=1.5)
@@ -33,36 +36,43 @@ if __name__ == "__main__":
     model.compile(optimizer=adam, loss={'cls1_fc_pose_xyz': posenet.euc_loss1x, 'cls1_fc_pose_wpqr': posenet.euc_loss1q,
                                         'cls2_fc_pose_xyz': posenet.euc_loss2x, 'cls2_fc_pose_wpqr': posenet.euc_loss2q,
                                         'cls3_fc_pose_xyz_new': posenet.euc_loss3x,
-                                        'cls3_fc_pose_wpqr_new': posenet.euc_loss3q})
+                                        'cls3_fc_pose_wpqr_new': posenet.euc_loss3q}, metrics=[validation_error_x])
 
     # get the training and testing data (images with ground truth)
-    dataset_train, dataset_test = helper.getKings()
-
-    # Process the array
-    X_test = np.squeeze(np.array(dataset_test.images))
-    y_test = np.squeeze(np.array(dataset_test.poses))
-    X_test_new_new = np.expand_dims(X_test, axis=1)
-    y_test_new_new = np.expand_dims(y_test, axis=1)
-
-    # identify the number of samples to generate
-    sequence_length_test = (len(X_test) - window + 1)
-    indices = range(sequence_length_test)
-    #    random.shuffle(indices)
-
-    # preallocate the arrays
-    X_test_shuffle = np.zeros((sequence_length_test, window, 224, 224, 3), dtype=np.float64)
-    y_test_shuffle = np.zeros((sequence_length_test, window, 7), dtype=np.float64)
-
-    # generate the image sequences and their respective ground truths
-    j = 0
-    for i in indices:
-        for k in range(window):
-            X_test_shuffle[j, k, :, :, :] = X_test_new_new[i + k, 0, :, :, :]
-            y_test_shuffle[j, k, :] = y_test_new_new[i + k, 0, :]
-        j = j + 1
-
+    # dataset_train, dataset_test = helper.getKings()
+    #
+    # # Process the array
+    # X_test = np.squeeze(np.array(dataset_test.images))
+    # y_test = np.squeeze(np.array(dataset_test.poses))
+    # X_test_new_new = np.expand_dims(X_test, axis=1)
+    # y_test_new_new = np.expand_dims(y_test, axis=1)
+    #
+    # # identify the number of samples to generate
+    # sequence_length_test = (len(X_test) - window + 1)
+    # indices = range(sequence_length_test)
+    # #    random.shuffle(indices)
+    #
+    # # preallocate the arrays
+    # X_test_shuffle = np.zeros((sequence_length_test, window, 224, 224, 3), dtype=np.float64)
+    # y_test_shuffle = np.zeros((sequence_length_test, window, 7), dtype=np.float64)
+    #
+    # # generate the image sequences and their respective ground truths
+    # j = 0
+    # for i in indices:
+    #     for k in range(window):
+    #         X_test_shuffle[j, k, :, :, :] = X_test_new_new[i + k, 0, :, :, :]
+    #         y_test_shuffle[j, k, :] = y_test_new_new[i + k, 0, :]
+    #     j = j + 1
+    directory = '/home/tarekfourati/pfa/RecurrentBIM-PoseNet/RecurrentBIMPoseNetDataset/Synthetic dataset/Gradmag-Syn-Car/'
+    dataset_train = 'groundtruth_GradmagSynCar.txt'
+    gen = DataGenerator(
+        directory=directory,
+        file_name=dataset_train,
+        window=window,
+        shuffle=False
+    )
     # Estimate the camera poses using the model loaded
-    testPredict = model.predict(X_test_shuffle)
+    testPredict = model.predict(gen)
 
     # take the predictions from the final branch of the network
     valsx = testPredict[4]
@@ -71,22 +81,21 @@ if __name__ == "__main__":
     # compute resultss
 
     # preallocate the arrays
-    results = np.zeros((sequence_length_test, 2))
-    results_loc = np.zeros((sequence_length_test, 6 * window))
-    results_rot = np.zeros((sequence_length_test, 8 * window))
+    results = np.zeros((gen.sequence_length, 2))
+    results_loc = np.zeros((gen.sequence_length, 6 * window))
+    results_rot = np.zeros((gen.sequence_length, 8 * window))
 
     # check the errors by comparing with the ground truth
-    for i in range(sequence_length_test):
-
-        pose_q = np.asarray(y_test_shuffle[i, :, 3:7])
-        pose_x = np.asarray(y_test_shuffle[i, :, 0:3])
+    for i in range(gen.sequence_length-1):
+        Y = np.zeros((window, 7))
+        for k in range(window):
+            Y[k, :] = gen.labels[i + k]
+        pose_q = np.asarray(Y[:, 3:7])
+        pose_x = np.asarray(Y[:, 0:3])
         predicted_x = valsx[i]
         predicted_q = valsq[i]
-        pose_q = np.squeeze(pose_q)
-        pose_x = np.squeeze(pose_x)
         predicted_q = np.squeeze(predicted_q)
         predicted_x = np.squeeze(predicted_x)
-        print (predicted_x.shape, pose_x.shape)
 
         # compute Individual Sample Errors
         q1 = np.zeros((window, 4))
@@ -111,8 +120,7 @@ if __name__ == "__main__":
                 theta[j] = 2 * np.arccos(d[j]) * 180 / math.pi
                 error_x[j] = np.linalg.norm(pose_x[j, :] - predicted_x[j, :])
 
-            # print and store the results
-        print (pose_x, predicted_x)
+
         error_x = np.median(error_x)
         theta = np.median(theta)
         results[i, :] = [error_x, theta]
@@ -131,7 +139,7 @@ if __name__ == "__main__":
                 results_rot[i, (4 * j + 4 * window):(4 * j + 4 + 4 * window)] = pose_q[j, :]
 
             # print the final errors and the iteration of sequence
-        print ('Iteration:  ', i, '  Error XYZ (m):  ', error_x, '  Error Q (degrees):  ', theta)
+        print('Iteration:  ', i, '  Error XYZ (m):  ', error_x, '  Error Q (degrees):  ', theta)
     median_result = np.median(results, axis=0)
 
     # print the median errors

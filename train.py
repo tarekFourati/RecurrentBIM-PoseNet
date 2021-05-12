@@ -9,14 +9,14 @@ import helper_train_mean as helper
 import posenetLSTMDropout as posenet
 # import posenetLSTMnoSequence as posenet
 # import posenetLSTM as posenet
-from tensorflow.python.client import device_lib
 import numpy as np
 from keras.optimizers import Adam
 from keras.callbacks import ModelCheckpoint
 import random
+from generator import DataGenerator
 
 # define the setting of the training. Note some other setting of the network can be found in the begenning of the posenetLSTMDropout.py file
-window = 10
+window = 4
 learningRate = 0.001
 batch_size = 25
 beta = posenet.beta
@@ -51,22 +51,16 @@ def validation_error_x(y_true, y_pred):
 
 
 if __name__ == "__main__":
-    # with tf.Session() as sess:
-    #     devices = sess.list_devices()
-    #     print(devices)
 
-    # sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
-    # print(sess)
-    # Create model and load the weights of GoogLeNet (Trained on Places)
     model = posenet.create_posenet('googlenet_weights.h5', True, window)
 
-    #    for layer in model.layers[:-15]:
-    #        layer.trainable = False
-    #        if isinstance(layer, keras.layers.normalization.BatchNormalization):
-    #            layer._per_input_updates = {}
-    #            print ("BATCH NORM FROZEN")
-    #        print layer.name
-    #    print(model.summary())
+    for layer in model.layers[:-15]:
+        layer.trainable = False
+        if isinstance(layer, keras.layers.normalization.BatchNormalization):
+            layer._per_input_updates = {}
+            print("BATCH NORM FROZEN")
+        print(layer.name)
+    print(model.summary())
 
     # define optimiser, compile model and get the training dataset
     adam = Adam(lr=learningRate, clipvalue=1.5)
@@ -78,79 +72,39 @@ if __name__ == "__main__":
                                         'cls3_fc_pose_xyz_new': posenet.euc_loss3x,
                                         'cls3_fc_pose_wpqr_new': posenet.euc_loss3q}, metrics=[validation_error_x])
 
-    # get the training and testing data (images with ground truth)
-    dataset_train, dataset_test = helper.getKings()
-
-    # Process the array
-    # X_train = np.squeeze(np.array(dataset_train.images))
-    # y_train = np.squeeze(np.array(dataset_train.poses))
-    # X_train = np.expand_dims(X_train, axis=1)
-    # y_train = np.expand_dims(y_train, axis=1)
-    X_train = np.array(dataset_train.images)
-    y_train = np.expand_dims(np.array(dataset_train.poses), axis=1)
-    # identify the number of samples to generate
-    sequence_length_train = (len(X_train) - window + 1)
-    indices = list(range(sequence_length_train))
-
-    # shuffle training sequences
-    random.shuffle(indices)  # To turn off for LSTM stateful operation
-    # def training_generator():
-    #     for i in range(10):
-    #         yield image
-    # shape(1,window,224,224,3), [y_train_x, y_train_q, y_train_x, y_train_q, y_train_x, y_train_q] shape(
-    # preallocate the arrays
-    X_train_shuffle = np.zeros((sequence_length_train, window, 224, 224, 3), dtype=np.float64)
-    y_train_shuffle = np.zeros((sequence_length_train, window, 7), dtype=np.float64)
-
-    # generate the image sequences and their respective ground truths
-    j = 0
-    for i in indices:
-        for k in range(window):
-            X_train_shuffle[j, k, :, :, :] = X_train[i + k, 0, :, :, :]
-            y_train_shuffle[j, k, :] = y_train[i + k, 0, :]
-        j = j + 1
-    print(X_train_shuffle.shape, y_train_shuffle.shape)
-
-    # allocate arrays to separate XYZ and wpqrn
-    y_train_x = y_train_shuffle[:, :, 0:3]
-    y_train_q = y_train_shuffle[:, :, 3:7]
-
-    # Repeat all steps for test images
-    X_test = np.squeeze(np.array(dataset_test.images))
-    y_test = np.squeeze(np.array(dataset_test.poses))
-    X_test = np.expand_dims(X_test, axis=1)
-    y_test = np.expand_dims(y_test, axis=1)
-
-    sequence_length_test = (len(X_test) - window + 1)
-
-    indices = list(range(sequence_length_test))
-    random.shuffle(indices)  # To turn off for LSTM stateful operation
-    X_test_shuffle = np.zeros((sequence_length_test, window, 224, 224, 3), dtype=np.float64)
-    y_test_shuffle = np.zeros((sequence_length_test, window, 7), dtype=np.float64)
-
-    j = 0
-    for i in indices:
-        for k in range(window):
-            X_test_shuffle[j, k, :, :, :] = X_test[i + k, 0, :, :, :]
-            y_test_shuffle[j, k, :] = y_test[i + k, 0, :]
-        j = j + 1
-
-    y_test_x = y_test_shuffle[:, :, 0:3]
-    y_test_q = y_test_shuffle[:, :, 3:7]
+    directory = '/home/tarekfourati/pfa/RecurrentBIM-PoseNet/RecurrentBIMPoseNetDataset/Synthetic dataset/Gradmag-Syn-Car/'
+    dataset_train = 'groundtruth_GradmagSynCar.txt'
+    dataset_test = 'groundtruth_GradmagReal.txt'
+    training_generator = DataGenerator(
+        directory=directory,
+        file_name=dataset_train,
+        window=window
+    )
+    test_generator = DataGenerator(
+        directory=directory,
+        file_name=dataset_test,
+        window=window,
+        mean=training_generator.mean
+    )
 
     # Setup checkpointing for keeping the best results
-    #    checkpointer = ModelCheckpoint(filepath="today_batch25_LR0001_beta_600_brforgradmag_dropout.h5", verbose=1, save_best_only=True, save_weights_only=True)
+    # checkpointer = ModelCheckpoint(filepath="today_batch25_LR0001_beta_600_brforgradmag_dropout.h5", verbose=1, save_best_only=True, save_weights_only=True)
     checkpointer = ModelCheckpoint(
         filepath='window' + str(window) + 'batch' + str(batch_size) + 'LR' + str(learningRate) + 'beta' + str(
-            beta) + 'LSTM' + str(LSTM_size) + 'Dropout' + str(drop1) + str(drop2) + '.h5', verbose=1,
+            beta) + 'LSTM' + str(LSTM_size) + 'Dropout' + str(drop1) + str(drop2) + 'checkpoint.h5', verbose=1,
         save_best_only=True, save_weights_only=True, monitor='val_cls3_fc_pose_xyz_new_validation_error_x', mode='min')
 
     # creating history object to train and record the log of the process
-    history = model.fit(X_train_shuffle, [y_train_x, y_train_q, y_train_x, y_train_q, y_train_x, y_train_q],
-                        batch_size=batch_size,
-                        epochs=4,
-                        validation_data=(X_test_shuffle, [y_test_x, y_test_q, y_test_x, y_test_q, y_test_x, y_test_q]),
-                        callbacks=[checkpointer, TestCallback([X_test_shuffle, y_test_x, y_test_q])])
+    history = model.fit(
+        training_generator,
+        validation_data=test_generator,
+        # add in callbacks
+        # TestCallback([X_test_shuffle, y_test_x, y_test_q])
+        callbacks=[checkpointer],
+        # use_multiprocessing=True,
+        # workers=6,
+        epochs=20
+    )
 
     #    history_dict = history.history
     #    print history_dict.keys()
