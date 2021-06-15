@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import keras
 
 from train import validation_error_x
@@ -26,7 +28,8 @@ if __name__ == "__main__":
     model = posenet.create_posenet(None, True, window)
 
     # load weight file
-    weight_file = 'window4batch25LR0.001beta600LSTM256Dropout0.250.25_weight.h5'
+    # weight_file = 'window4batch25LR0.001beta600LSTM256Dropout0.250.25_weight.h5'
+    weight_file = '/home/tarekfourati/pfa/RecurrentBIM-PoseNet/local_technique_45_test/window10batch16LR0.001beta600LSTM256Dropout0.250.25checkpoint.h5'
     model.load_weights(weight_file)
 
     # define the optimiser
@@ -63,8 +66,10 @@ if __name__ == "__main__":
     #         X_test_shuffle[j, k, :, :, :] = X_test_new_new[i + k, 0, :, :, :]
     #         y_test_shuffle[j, k, :] = y_test_new_new[i + k, 0, :]
     #     j = j + 1
-    directory = '/home/tarekfourati/pfa/RecurrentBIM-PoseNet/RecurrentBIMPoseNetDataset/Synthetic dataset/Gradmag-Syn-Car/'
-    dataset_train = 'groundtruth_GradmagSynCar.txt'
+    # directory = '/home/tarekfourati/pfa/RecurrentBIM-PoseNet/RecurrentBIMPoseNetDataset/Synthetic dataset/Gradmag-Syn-Car/'
+    # dataset_train = 'groundtruth_GradmagSynCar.txt'
+    directory = '/home/tarekfourati/pfa/RecurrentBIM-PoseNet/local_technique_60_test/'
+    dataset_train = 'test.txt'
     gen = DataGenerator(
         directory=directory,
         file_name=dataset_train,
@@ -86,7 +91,7 @@ if __name__ == "__main__":
     results_rot = np.zeros((gen.sequence_length, 8 * window))
 
     # check the errors by comparing with the ground truth
-    for i in range(gen.sequence_length-1):
+    for i in range(gen.sequence_length - 1):
         Y = np.zeros((window, 7))
         for k in range(window):
             Y[k, :] = gen.labels[i + k]
@@ -120,7 +125,6 @@ if __name__ == "__main__":
                 theta[j] = 2 * np.arccos(d[j]) * 180 / math.pi
                 error_x[j] = np.linalg.norm(pose_x[j, :] - predicted_x[j, :])
 
-
         error_x = np.median(error_x)
         theta = np.median(theta)
         results[i, :] = [error_x, theta]
@@ -141,9 +145,25 @@ if __name__ == "__main__":
             # print the final errors and the iteration of sequence
         print('Iteration:  ', i, '  Error XYZ (m):  ', error_x, '  Error Q (degrees):  ', theta)
     median_result = np.median(results, axis=0)
+    mean_result = np.mean(results, axis=0)
+    MAX_XYZ_ERROR = 1.5
+    MAX_ROT_ERROR = 10
+    true_results = results[(results[:, 0] < MAX_XYZ_ERROR) & (results[:, 1] < MAX_ROT_ERROR)]
+    true_xyz_results = results[results[:, 0] < MAX_XYZ_ERROR]
+    true_rot_results = results[results[:, 1] < MAX_ROT_ERROR]
 
     # print the median errors
     print('Median error ', median_result[0], 'm  and ', median_result[1], 'degrees.')
+    print('mean error ', mean_result[0], 'm  and ', mean_result[1], 'degrees.')
+    with open('resultswith45fov.txt', 'a') as f:
+        f.write('directory : ' + directory + '\n' + datetime.now().strftime("%d/%m/%Y %H:%M:%S") + '\n')
+        f.write('weight file : ' + weight_file+'\n')
+        f.write('Median error ' + str(median_result[0]) + 'm  and ' + str(median_result[1]) + 'degrees.\n')
+        f.write('Mean error ' + str(mean_result[0]) + 'm  and ' + str(mean_result[1]) + 'degrees.\n')
+        f.write('true_xyz: ' + str(len(true_xyz_results[:, 0]) * 100 / len(results[:, 0])) + '%\n')
+        f.write('true_rot: ' + str(len(true_rot_results[:, 0]) * 100 / len(results[:, 0])) + '%\n')
+        f.write('true_xyz_&_rot: ' + str(len(true_results[:, 0]) * 100 / len(results[:, 0])) + '%\n')
+        f.write("*************************************** \n")
 
     # save the location and rotations of the sequences in an ordered manner
     np.savetxt(weight_file + 'Window' + str(window) + 'location.txt', results_loc, delimiter=' ')

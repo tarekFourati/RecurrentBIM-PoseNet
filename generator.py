@@ -1,3 +1,5 @@
+import gc
+
 import numpy as np
 import keras
 import cv2
@@ -22,6 +24,7 @@ class DataGenerator(keras.utils.Sequence):
     def __init__(self, directory, file_name, window, mean=None, image_size=(224, 224, 3), batch_size=8, shuffle=True,
                  random_state=42):
         'Initialization'
+        self.epoch = 0
         self.directory = directory
         self.window = window
         self.batch_size = batch_size
@@ -74,6 +77,8 @@ class DataGenerator(keras.utils.Sequence):
         return X, [Y[:, :, 0:3], Y[:, :, 3:], Y[:, :, 0:3], Y[:, :, 3:], Y[:, :, 0:3], Y[:, :, 3:]]
 
     def on_epoch_end(self):
+        gc.collect()
+        self.epoch += 1
         'Updates indexes after each epoch'
         if self.shuffle == True:
             np.random.seed(self.random_state)

@@ -1,3 +1,5 @@
+import gc
+
 import keras
 import tensorflow as tf
 
@@ -14,6 +16,7 @@ from keras.optimizers import Adam
 from keras.callbacks import ModelCheckpoint
 import random
 from generator import DataGenerator
+from keras.utils.vis_utils import plot_model
 
 # define the setting of the training. Note some other setting of the network can be found in the begenning of the posenetLSTMDropout.py file
 window = 4
@@ -51,16 +54,17 @@ def validation_error_x(y_true, y_pred):
 
 
 if __name__ == "__main__":
+    current_epoch = 77
+    model = posenet.create_posenet('/home/tarekfourati/pfa/window10batch16LR0.001beta600LSTM256Dropout0.250.25.77.h5', True, window)
 
-    model = posenet.create_posenet('googlenet_weights.h5', True, window)
-
-    for layer in model.layers[:-15]:
-        layer.trainable = False
-        if isinstance(layer, keras.layers.normalization.BatchNormalization):
-            layer._per_input_updates = {}
-            print("BATCH NORM FROZEN")
-        print(layer.name)
+    # for layer in model.layers:
+    #     # layer.trainable = False
+    #     if isinstance(layer, keras.layers.normalization.BatchNormalization):
+    #         layer._per_input_updates = {}
+    #         print("BATCH NORM FROZEN")
+    #     print(layer.name)
     print(model.summary())
+    plot_model(model, to_file='model_plot.png', show_shapes=True, show_layer_names=True)
 
     # define optimiser, compile model and get the training dataset
     adam = Adam(lr=learningRate, clipvalue=1.5)
@@ -75,6 +79,9 @@ if __name__ == "__main__":
     directory = '/home/tarekfourati/pfa/RecurrentBIM-PoseNet/RecurrentBIMPoseNetDataset/Synthetic dataset/Gradmag-Syn-Car/'
     dataset_train = 'groundtruth_GradmagSynCar.txt'
     dataset_test = 'groundtruth_GradmagReal.txt'
+    # directory = '/home/tarekfourati/pfa/RecurrentBIM-PoseNet/islam/'
+    # dataset_train = 'met'
+    # dataset_test = 'met2'
     training_generator = DataGenerator(
         directory=directory,
         file_name=dataset_train,
@@ -93,6 +100,12 @@ if __name__ == "__main__":
         filepath='window' + str(window) + 'batch' + str(batch_size) + 'LR' + str(learningRate) + 'beta' + str(
             beta) + 'LSTM' + str(LSTM_size) + 'Dropout' + str(drop1) + str(drop2) + 'checkpoint.h5', verbose=1,
         save_best_only=True, save_weights_only=True, monitor='val_cls3_fc_pose_xyz_new_validation_error_x', mode='min')
+    checkpointer2 = ModelCheckpoint(
+        filepath='window' + str(window) + 'batch' + str(batch_size) + 'LR' + str(learningRate) + 'beta' + str(
+            beta) + 'LSTM' + str(LSTM_size) + 'Dropout' + str(drop1) + str(drop2) + "epoch{epoch:03d}"+'.h5', verbose=1,
+        save_weights_only=True,save_freq=20 )
+
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="./logs")
 
     # creating history object to train and record the log of the process
     history = model.fit(
@@ -100,11 +113,14 @@ if __name__ == "__main__":
         validation_data=test_generator,
         # add in callbacks
         # TestCallback([X_test_shuffle, y_test_x, y_test_q])
-        callbacks=[checkpointer],
+        callbacks=[checkpointer, tensorboard_callback, checkpointer2],
         # use_multiprocessing=True,
-        # workers=6,
-        epochs=20
+        # workers=2,
+        epochs=100,
+        initial_epoch=current_epoch
+
     )
+    # todo
 
     #    history_dict = history.history
     #    print history_dict.keys()
@@ -119,3 +135,16 @@ if __name__ == "__main__":
     # save the final model
     model.save_weights('window' + str(window) + 'batch' + str(batch_size) + 'LR' + str(learningRate) + 'beta' + str(
         beta) + 'LSTM' + str(LSTM_size) + 'Dropout' + str(drop1) + str(drop2) + '_weight.h5')
+
+    # plt.plot(history.history['loss'])
+    # plt.plot(history.history['val_loss'])
+    # plt.plot(history.history['mse'])
+    # plt.plot(history.history['val_mse'])
+    # plt.title('model loss')
+    # plt.ylabel('loss')
+    # plt.xlabel('epoch')
+    # plt.legend(['train', 'validation', 'mse', 'val_mse'])
+    # plt.gcf()
+    # plt.savefig("images/metrics")
+    #
+    # plt.show()
