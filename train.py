@@ -1,7 +1,11 @@
 import gc
 
-import keras
 import tensorflow as tf
+import tensorflow.keras.backend as K
+from tensorflow.python.keras.callbacks import ModelCheckpoint
+from tensorflow.python.keras.optimizer_v2.adam import Adam
+from tensorflow.python.keras.utils.version_utils import callbacks
+from tensorflow.python.keras.utils.vis_utils import plot_model
 
 import helper_train_mean as helper
 # import helper
@@ -12,11 +16,17 @@ import posenetLSTMDropout as posenet
 # import posenetLSTMnoSequence as posenet
 # import posenetLSTM as posenet
 import numpy as np
-from keras.optimizers import Adam
-from keras.callbacks import ModelCheckpoint
+
 import random
 from generator import DataGenerator
-from keras.utils.vis_utils import plot_model
+
+physical_devices = tf.config.list_physical_devices('GPU')
+try:
+  tf.config.experimental.set_memory_growth(physical_devices[0], True)
+except:
+  # Invalid device or cannot modify virtual devices once initialized.
+  pass
+
 
 # define the setting of the training. Note some other setting of the network can be found in the begenning of the posenetLSTMDropout.py file
 window = 4
@@ -33,7 +43,7 @@ drop2 = posenet.drop2
 #    return backend.sqrt(backend.mean(backend.square(y_pred - y_true)))
 
 # function to check the loss of the last branch of the network
-class TestCallback(keras.callbacks.Callback):
+class TestCallback(callbacks.Callback):
     def __init__(self, test_data):
         self.test_data = test_data
 
@@ -49,13 +59,13 @@ class TestCallback(keras.callbacks.Callback):
 
 # function to retrn the loss
 def validation_error_x(y_true, y_pred):
-    loss_x = keras.backend.sum(keras.backend.abs(y_true - y_pred))
+    loss_x = K.sum(K.abs(y_true - y_pred))
     return loss_x
 
 
 if __name__ == "__main__":
-    current_epoch = 77
-    model = posenet.create_posenet('/home/tarekfourati/pfa/window10batch16LR0.001beta600LSTM256Dropout0.250.25.77.h5', True, window)
+    current_epoch = 0
+    model = posenet.create_posenet('googlenet_weights.h5', True, window)
 
     # for layer in model.layers:
     #     # layer.trainable = False
@@ -64,21 +74,22 @@ if __name__ == "__main__":
     #         print("BATCH NORM FROZEN")
     #     print(layer.name)
     print(model.summary())
-    plot_model(model, to_file='model_plot.png', show_shapes=True, show_layer_names=True)
+    # plot_model(model, to_file='model_plot.png', show_shapes=True, show_layer_names=True)
 
     # define optimiser, compile model and get the training dataset
     adam = Adam(lr=learningRate, clipvalue=1.5)
 
     # compile the model with the custom loss function
-    model.compile(optimizer=adam, loss={'cls1_fc_pose_xyz': posenet.euc_loss1x, 'cls1_fc_pose_wpqr': posenet.euc_loss1q,
-                                        'cls2_fc_pose_xyz': posenet.euc_loss2x, 'cls2_fc_pose_wpqr': posenet.euc_loss2q,
-                                        #                                        'cls3_fc_pose_xyz_new': posenet.euc_loss3x, 'cls3_fc_pose_wpqr_new': posenet.euc_loss3q})
+    model.compile(optimizer=adam, loss={'cls1_fc_pose_xyz': posenet.euc_loss1x,
+                                        'cls1_fc_pose_wpqr': posenet.euc_loss1q,
+                                        'cls2_fc_pose_xyz': posenet.euc_loss2x,
+                                        'cls2_fc_pose_wpqr': posenet.euc_loss2q,
                                         'cls3_fc_pose_xyz_new': posenet.euc_loss3x,
                                         'cls3_fc_pose_wpqr_new': posenet.euc_loss3q}, metrics=[validation_error_x])
 
-    directory = '/home/tarekfourati/pfa/RecurrentBIM-PoseNet/RecurrentBIMPoseNetDataset/Synthetic dataset/Gradmag-Syn-Car/'
-    dataset_train = 'groundtruth_GradmagSynCar.txt'
-    dataset_test = 'groundtruth_GradmagReal.txt'
+    directory = 'local_technique_45_field_of_view/'
+    dataset_train = 'train.txt'
+    dataset_test = 'cross-validation.txt'
     # directory = '/home/tarekfourati/pfa/RecurrentBIM-PoseNet/islam/'
     # dataset_train = 'met'
     # dataset_test = 'met2'
@@ -100,10 +111,10 @@ if __name__ == "__main__":
         filepath='window' + str(window) + 'batch' + str(batch_size) + 'LR' + str(learningRate) + 'beta' + str(
             beta) + 'LSTM' + str(LSTM_size) + 'Dropout' + str(drop1) + str(drop2) + 'checkpoint.h5', verbose=1,
         save_best_only=True, save_weights_only=True, monitor='val_cls3_fc_pose_xyz_new_validation_error_x', mode='min')
-    checkpointer2 = ModelCheckpoint(
-        filepath='window' + str(window) + 'batch' + str(batch_size) + 'LR' + str(learningRate) + 'beta' + str(
-            beta) + 'LSTM' + str(LSTM_size) + 'Dropout' + str(drop1) + str(drop2) + "epoch{epoch:03d}"+'.h5', verbose=1,
-        save_weights_only=True,save_freq=20 )
+    # checkpointer2 = ModelCheckpoint(
+    #     filepath='window' + str(window) + 'batch' + str(batch_size) + 'LR' + str(learningRate) + 'beta' + str(
+    #         beta) + 'LSTM' + str(LSTM_size) + 'Dropout' + str(drop1) + str(drop2) + "epoch{epoch:03d}"+'.h5', verbose=1,
+    #     save_weights_only=True,save_freq=20 )
 
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="./logs")
 
@@ -113,10 +124,10 @@ if __name__ == "__main__":
         validation_data=test_generator,
         # add in callbacks
         # TestCallback([X_test_shuffle, y_test_x, y_test_q])
-        callbacks=[checkpointer, tensorboard_callback, checkpointer2],
+        callbacks=[checkpointer, tensorboard_callback],
         # use_multiprocessing=True,
         # workers=2,
-        epochs=100,
+        epochs=200,
         initial_epoch=current_epoch
 
     )

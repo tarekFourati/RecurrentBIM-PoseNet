@@ -1,6 +1,7 @@
 from datetime import datetime
 
-import keras
+import tensorflow.keras as keras
+from tensorflow.python.keras.optimizer_v2.adam import Adam
 
 from train import validation_error_x
 
@@ -17,7 +18,6 @@ import posenetLSTMDropoutTest as posenet
 # import posenet_dropout_regu as posenet
 
 import numpy as np
-from keras.optimizers import Adam
 from generator import DataGenerator
 
 # Define window length
@@ -29,7 +29,7 @@ if __name__ == "__main__":
 
     # load weight file
     # weight_file = 'window4batch25LR0.001beta600LSTM256Dropout0.250.25_weight.h5'
-    weight_file = '/home/tarekfourati/pfa/RecurrentBIM-PoseNet/local_technique_45_test/window10batch16LR0.001beta600LSTM256Dropout0.250.25checkpoint.h5'
+    weight_file = '/home/Amine/Research/RecurrentBIM-PoseNet/window4batch25LR0.001beta600LSTM256Dropout0.250.25checkpoint.h5'
     model.load_weights(weight_file)
 
     # define the optimiser
@@ -68,8 +68,8 @@ if __name__ == "__main__":
     #     j = j + 1
     # directory = '/home/tarekfourati/pfa/RecurrentBIM-PoseNet/RecurrentBIMPoseNetDataset/Synthetic dataset/Gradmag-Syn-Car/'
     # dataset_train = 'groundtruth_GradmagSynCar.txt'
-    directory = '/home/tarekfourati/pfa/RecurrentBIM-PoseNet/local_technique_60_test/'
-    dataset_train = 'test.txt'
+    directory = '/home/Amine/Research/RecurrentBIM-PoseNet/local_technique_45_field_of_view/'
+    dataset_train = 'cross-validation.txt'
     gen = DataGenerator(
         directory=directory,
         file_name=dataset_train,

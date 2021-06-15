@@ -1,11 +1,11 @@
-from keras.layers import Input, Dense, Convolution2D
-from keras.layers import MaxPooling2D, AveragePooling2D, LSTM
-from keras.layers import ZeroPadding2D, Dropout, Flatten, TimeDistributed
-from keras.layers import concatenate, Reshape, Activation, BatchNormalization, concatenate
-# from keras.utils.np_utils import convert_kernel
-from keras import backend as K
+from tensorflow.keras.layers import Input, Dense, Convolution2D
+from tensorflow.keras.layers import MaxPooling2D, AveragePooling2D, LSTM
+from tensorflow.keras.layers import ZeroPadding2D, Dropout, Flatten, TimeDistributed
+from tensorflow.keras.layers import concatenate, Reshape, Activation, BatchNormalization, concatenate
+# from tensorflow.keras.utils.np_utils import convert_kernel
+from tensorflow.keras import backend as K
 # K.set_image_dim_ordering('tf')
-from keras.models import Model
+from tensorflow.keras.models import Model
 import tensorflow as tf
 import numpy as np
 import h5py
@@ -184,8 +184,8 @@ def create_posenet(weights_path=None, tune=False, stepsize=1):
 
         #        cls1_fc1_pose = TimeDistributed(Dense(1024,activation='relu'),name='cls1_fc1_pose')(cls1_fc1_flat)
 
-        #        loss1_drop_fc = TimeDistributed(Dropout(0.7))(cls1_fc1_pose)
-
+               # loss1_drop_fc = TimeDistributed(Dropout(0.7))(cls1_fc1_pose)
+        cls1_fc1_flat = TimeDistributed(Dropout(0.5))(cls1_fc1_flat)
         #        cls1_fc_pose_xyz = TimeDistributed(Dense(3),name='cls1_fc_pose_xyz')(loss1_drop_fc)
 
         #        cls1_fc_pose_wpqr = TimeDistributed(Dense(4),name='cls1_fc_pose_wpqr')(loss1_drop_fc)
@@ -288,6 +288,8 @@ def create_posenet(weights_path=None, tune=False, stepsize=1):
         #        cls2_fc1 = TimeDistributed(Dense(1024,activation='relu'),name='cls2_fc1')(cls2_fc1_flat)
 
         #        loss2_drop_fc = TimeDistributed(Dropout(0.7))(cls2_fc1)
+        cls2_fc1_flat = TimeDistributed(Dropout(0.5))(cls2_fc1_flat)
+
 
         #        cls2_fc_pose_xyz = TimeDistributed(Dense(3),name='cls2_fc_pose_xyz')(loss2_drop_fc)
 
@@ -391,6 +393,8 @@ def create_posenet(weights_path=None, tune=False, stepsize=1):
         #        cls3_fc1_pose = TimeDistributed(Dense(2048,activation='relu'),name='cls3_fc1_pose')(cls3_fc1_flat)
 
         #        loss3_drop_fc = TimeDistributed(Dropout(0.5))(cls3_fc1_pose)
+
+        cls3_fc1_flat = TimeDistributed(Dropout(0.5))(cls3_fc1_flat)
 
         #        lstm = (LSTM(LSTM_size ,return_sequences=True, input_shape=(stepsize, 2048)))(loss3_drop_fc)
 

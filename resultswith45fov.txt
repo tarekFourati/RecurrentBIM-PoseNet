@@ -1,0 +1,36 @@
+directory : /home/Amine/Research/RecurrentBIM-PoseNet/local_technique_45_field_of_view/
+15/06/2021 14:11:08
+weight file : /home/Amine/Research/RecurrentBIM-PoseNet/window4batch25LR0.001beta600LSTM256Dropout0.250.25checkpoint.h5
+Median error 2.0302430461210452m  and 12.866240723364083degrees.
+Mean error 2.2829097030707852m  and 16.455113837247325degrees.
+true_xyz: 34.48275862068966%
+true_rot: 27.96934865900383%
+true_xyz_&_rot: 11.11111111111111%
+*************************************** 
+directory : /home/Amine/Research/RecurrentBIM-PoseNet/local_technique_45_field_of_view/
+15/06/2021 14:19:57
+weight file : /home/Amine/Research/RecurrentBIM-PoseNet/window4batch25LR0.001beta600LSTM256Dropout0.250.25checkpoint.h5
+Median error 2.029955342832227m  and 12.860127359063814degrees.
+Mean error 2.2829014953167794m  and 16.455538885508133degrees.
+true_xyz: 34.48275862068966%
+true_rot: 27.96934865900383%
+true_xyz_&_rot: 11.11111111111111%
+*************************************** 
+directory : /home/Amine/Research/RecurrentBIM-PoseNet/local_technique_45_field_of_view/
+15/06/2021 14:21:01
+weight file : /home/Amine/Research/RecurrentBIM-PoseNet/window4batch25LR0.001beta600LSTM256Dropout0.250.25checkpoint.h5
+Median error 1.807754664536657m  and 10.706987447981138degrees.
+Mean error 2.212105069304068m  and 13.443263742820612degrees.
+true_xyz: 37.16475095785441%
+true_rot: 44.827586206896555%
+true_xyz_&_rot: 20.306513409961685%
+*************************************** 
+directory : /home/Amine/Research/RecurrentBIM-PoseNet/local_technique_45_field_of_view/
+15/06/2021 15:05:18
+weight file : /home/Amine/Research/RecurrentBIM-PoseNet/window4batch25LR0.001beta600LSTM256Dropout0.250.25checkpoint.h5
+Median error 1.2937873824954793m  and 10.149389690289977degrees.
+Mean error 1.6744829557503518m  and 13.667676327348882degrees.
+true_xyz: 59.38697318007663%
+true_rot: 49.42528735632184%
+true_xyz_&_rot: 37.93103448275862%
+*************************************** 

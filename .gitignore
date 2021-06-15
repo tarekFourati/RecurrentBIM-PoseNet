@@ -8,3 +8,4 @@ __pycache__/
 *.pyc
 
 RecurrentBIMPoseNetDataset
+local_technique_45_field_of_view/

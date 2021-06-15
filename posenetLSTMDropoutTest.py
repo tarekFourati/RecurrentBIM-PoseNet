@@ -1,11 +1,12 @@
-from keras.layers import Input, Dense, Convolution2D
-from keras.layers import MaxPooling2D, AveragePooling2D, LSTM
-from keras.layers import ZeroPadding2D, Dropout, Flatten, TimeDistributed
-from keras.layers import concatenate, Reshape, Activation, BatchNormalization, concatenate
+from tensorflow.keras.layers import Input, Dense, Convolution2D
+from tensorflow.keras.layers import MaxPooling2D, AveragePooling2D, LSTM
+from tensorflow.keras.layers import ZeroPadding2D, Dropout, Flatten, TimeDistributed
+from tensorflow.keras.layers import concatenate, Reshape, Activation, BatchNormalization, concatenate
 # from keras.utils.np_utils import convert_kernel
-from keras import backend as K
+from tensorflow.keras import backend as K
 # K.set_image_dim_ordering('tf')
-from keras.models import Model
+import tensorflow.keras as keras
+from tensorflow.keras.models import Model
 import tensorflow as tf
 import numpy as np
 import h5py
@@ -16,6 +17,36 @@ LSTM_size = 256
 beta = 600
 drop1 = 0.25
 drop2 = 0.25
+
+
+# class AccuracyPosition(keras.metrics.Metric):
+#     def __init__(self, position_threshold=1, rotation_threshold=10, name="AccuracyPosition", **kwargs):
+#         super(AccuracyPosition, self).__init__(name=name, **kwargs)
+#         self.position_threshold = position_threshold
+#         self.rotation_threshold = rotation_threshold
+#         self.true_positives = self.add_weight(name="ctp", initializer="zeros")
+#
+#     def update_state(self, y_true, y_pred, sample_weight=None):
+#         result =
+#         true_results = results[(results[:, 0] < MAX_XYZ_ERROR) & (results[:, 1] < MAX_ROT_ERROR)]
+#         true_xyz_results = results[results[:, 0] < MAX_XYZ_ERROR]
+#         true_rot_results = results[results[:, 1] < MAX_ROT_ERROR]
+#
+#
+#         y_pred = tf.reshape(tf.argmax(y_pred, axis=1), shape=(-1, 1))
+#         values = tf.cast(y_true, "int32") == tf.cast(y_pred, "int32")
+#         values = tf.cast(values, "float32")
+#         if sample_weight is not None:
+#             sample_weight = tf.cast(sample_weight, "float32")
+#             values = tf.multiply(values, sample_weight)
+#         self.true_positives.assign_add(tf.reduce_sum(values))
+#
+#     def result(self):
+#         return self.true_positives
+#
+#     def reset_states(self):
+#         # The state of the metric will be reset at the start of each epoch.
+#         self.true_positives.assign(0.0)
 
 
 # define the loss functions
